@@ -1,133 +1,145 @@
 ###############################################################################
-#Title: Spelunking Game
-#Version: 003.2 - modules removed
+#Title: Splunking Game
+#Version: 005
 ###############################################################################
 import random
-import highscore
 
-tank = {"air": 5}
-
-scuba_bag = {"inventory": [], "capacity": 3}
-
-diver = {"name": "Steve", "tank": tank,"bag": scuba_bag,
-         "score": 0, "diving": True}
-
-items = {"rock": {"name": "rock", "description": "ordinary rock",
-                  "value": 0},
-         "silverCoin": {"name": "silver coin", "description":
-                        "tarnished silver coin","value": 2},
-         "goldCoin": {"name": "gold coin", "description": "shiny gold coin",
-                      "value": 3},
-         "ruby": {"name": "ruby", "description": "beautiful red ruby",
-                  "value": 5}}
-
-# List to represent items rarity.
-rarity = ["rock", "rock", "silverCoin", "silverCoin", "silverCoin",
-          "silverCoin","goldCoin", "goldCoin", "goldCoin", "ruby", "ruby" ]
+highScoreFile = "SpelunkingHighScore.txt"
+highScore = 0
 
 
-def consume_air():
-    global diver
-    diver["tank"]["air"] -= 1
+class Item:
+
+    def __init__(self, name, description, value):
+        self.name = name
+        self.description = description
+        self.value = value
+
+    def print_description(self):
+        return f"You found a {self.description}."        
+        
+
+class Tank:
+
+    def __init__(self, capacity):
+        self.air = capacity
+
+    def consume_air(self):
+        self.air = self.air - 1
 
 
-def add_to_inventory(item):
-    global diver
-    diver["bag"]["inventory"].append(item)
+class Bag:
+    
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.inventory = []
+
+    def add_to_inventory(self, item):
+        self.inventory.append(item)
+
+    def evaluate_loot(self):
+        print("You found the following items: ")
+        value = 0
+        for item in self.inventory:
+            print(f" - {item.name} ({item.value})")
+            value += item.value
+        return value
 
 
-def keep(item):
-    print("keep...")
-    add_to_inventory(item)
-    consume_air()
+class Diver:
+    
+    def __init__(self, name, tankSize, bagCapacity):
+        self.name = name
+        self.tank = Tank(tankSize)
+        self.bag = Bag(bagCapacity)
+        self.divers_score = 0
 
-
-def leave(item):
-    print(f"leave {items[item]['name']}...")
-    consume_air()
-
-
-def search():
-    print("search...")
-    found = random.choice(rarity)
-    room = diver["bag"]["capacity"] - len(diver["bag"]["inventory"])
-    while True:
-        print(f"You found a {items[found]['description']}.")
-        print(f"You have {room} spots left in your bag. "
-              + "What do you want to do? ")
-        print(f" - Keep the {items[found]['name']} (keep)")
-        print(f" - Leave the {items[found]['name']} (leave)")
-        choice = input("Choice: ").lower()
-        if choice == "keep":
-            keep(found)
-            break
-        elif choice == "leave":
-            leave(found)
-            break
-        else:
-            print("not an option...try again")
+    def search(self):
+        print("search...")
+        found = random.choice(rarity)
+        room = self.bag.capacity - len(self.bag.inventory)
+        while True:
+            print(found.print_description())
+            print(f"You have {room} spots left in your bag. "
+                  + "What do you want to do? ")
+            print(f" - Keep the name (keep)")
+            print(f" - Leave the name (leave)")
+            choice = input("Choice: ").lower()
+            if choice == "keep":
+                self.keep(found)
+                break
+            elif choice == "leave":
+                self.leave(found)
+                break
+            else:
+                print("not an option...try again")
+            
+    def keep(self, item):
+        print(f"keep {item.name}...")
+        self.bag.add_to_inventory(item)
+        self.tank.consume_air()
  
+    def leave(self, item):
+        print(f"leave {item.name}...")
+        self.tank.consume_air()
 
-def enjoy():
-    global air_tank, diver
-    print("enjoy...")
-    consume_air()
+    def enjoy(self):
+        print("enjoy...")
+        self.tank.consume_air()
 
-
-def return_to_surface():
-    print("Return to surface...")
-    diver["diving"] = False
-
-
-def action():
-        print("Choose one of the following options:")
-        print(" - Enjoy the Sights (enjoy)")
-        print(" - Search for Treasure (search)")
-        print(" - Quit the Game (quit)")
-        choice = input("Choice: ").lower()
-        if choice == "enjoy":
-            enjoy()
-        elif choice == "search":
-            search()
-        elif choice == "quit":
-            return_to_surface()
+    def calculate_score(self):
+        self.divers_score = self.bag.evaluate_loot()
+        print(f"Total value of your loot: {self.divers_score}")
+        print(f"Current high score: {highScore}")
+        if self.divers_score > int(highScore):
+            newHighScore(str(self.divers_score))
+            print(f"New high score: {self.divers_score}")
         else:
-            print("not an option...try again")
-            
-            
-def evaluate_loot():
-    score = 0
-    print("You found the following items: ")
-    for item in diver["bag"]["inventory"]:
-        print(f" - {items[item]['name']} ({items[item]['value']})")
-        score += items[item]["value"]
-    return score
-
-
-def calculate_score():
-    global diver
-    diver["score"] = evaluate_loot()
-    print(f"Total value of your loot: {diver['score']}")
-    print(f"Current high score: {highscore.highScore}")
-    if diver["score"] > int(highscore.highScore):
-        highscore.newHighScore(str(diver["score"]))
-        print(f"New high score: {diver['score']}")
-    else:
-        print("better luck next time.")
+            print("better luck next time.")
 
 
 def introduction():
     print("Welcome!...")
-    highscore.getHighScore()
-    print(f"Current high score: {highscore.highScore}")
+    getHighScore()
+    print(f"Current high score: {highScore}")
+
+
+def getHighScore():
+    global highScore
+    with open(highScoreFile, 'r') as file:
+        highScore = file.read()
+
+
+def newHighScore(newScore):
+    with open(highScoreFile, 'w') as file:
+        file.write(newScore)
+
+
+def action():
+    print("Choose one of the following options:")
+    print(" - Enjoy the Sights (enjoy)")
+    print(" - Search for Treasure (search)")
+    print(" - Quit the Game (quit)")
+    choice = input("Choice: ").lower()
+    if choice == "enjoy":
+        scuba_steve.enjoy()
+    elif choice == "search":
+        scuba_steve.search()
+    elif choice == "quit":
+        ending()
+        quit()
+    else:
+        print("not an option...try again")
 
 
 def game():
     introduction()
-    while diver["tank"]["air"] > 0 and \
-          len(diver["bag"]["inventory"]) != diver["bag"]["capacity"]:
-        action()
-    calculate_score()
+    # Game Ending Conditions.
+    while scuba_steve.tank.air>0 \
+    and len(scuba_steve.bag.inventory)<scuba_steve.bag.capacity:
+        action()    
+    print("Returned to the surface.")
+    scuba_steve.calculate_score()
     ending()
 
 
@@ -136,4 +148,15 @@ def ending():
 
 
 # Main -------------------------------------------------------------------------
+scuba_steve = Diver("Steve", 5, 3)
+
+rock = Item("rock", "ordinary rock", 0)
+silverCoin = Item("silver coin", "tarnished silver coin", 2)
+goldCoin = Item("gold coin", "shiny gold coin",3)
+ruby = Item("ruby", "beautiful red ruby", 5)
+
+# List to represent items rarity.
+rarity = [rock, rock, silverCoin, silverCoin, silverCoin,
+          silverCoin, goldCoin, goldCoin, goldCoin, ruby, ruby]
+
 game()
